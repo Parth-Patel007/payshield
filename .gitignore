@@ -1,0 +1,14 @@
+# Java/Gradle
+/build/
+/**/out/
+.gradle/
+# IDE
+.idea/
+*.iml
+# Terraform
+.terraform/
+terraform.tfstate*
+# Docker
+**/docker-compose.override.yml
+# Logs
+*.log
