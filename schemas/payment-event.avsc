@@ -1,1 +1,12 @@
-11
+{
+  "type": "record",
+  "name": "PaymentEvent",
+  "namespace": "com.example.payshield",
+  "fields": [
+    { "name": "msgId",        "type": "string" },
+    { "name": "debitAcct",    "type": "string" },
+    { "name": "creditAcct",   "type": "string" },
+    { "name": "amount",       "type": "double" },
+    { "name": "transactionTs","type": "long"   }
+  ]
+}
