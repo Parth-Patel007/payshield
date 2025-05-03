@@ -9,9 +9,6 @@ terraform {
 
 provider "docker" {}
 
-############################################
-# 1. Network & Kafka metadata volume
-############################################
 resource "docker_network" "payshield" {
   name = var.docker_network_name
 }
@@ -20,15 +17,11 @@ resource "docker_volume" "kafka_data" {
   name = "payshield_kafka_data"
 }
 
-############################################
-# 2. Generate a KRaft Cluster ID
-############################################
 data "external" "cluster_id" {
   program = [
     "bash", "-c",
     <<-SCRIPT
-      id=$(docker run --rm ${var.kafka_image} \
-            kafka-storage random-uuid)
+      id=$(docker run --rm ${var.kafka_image} kafka-storage random-uuid)
       echo "{\"cluster_id\":\"$id\"}"
     SCRIPT
   ]
@@ -38,28 +31,19 @@ locals {
   cluster_id = data.external.cluster_id.result.cluster_id
 }
 
-############################################
-# 3. Format the metadata store (idempotent)
-############################################
 resource "null_resource" "bootstrap_kraft" {
-  triggers = {
-    cid = local.cluster_id
-  }
+  triggers = { cid = local.cluster_id }
 
   provisioner "local-exec" {
     command = <<-SCRIPT
       set -e
-      # Ensure ownership for cp-kafka default user
       docker run --rm \
         -v ${docker_volume.kafka_data.name}:/var/lib/kraft-combined-logs \
-        busybox \
-        chown -R 1000:1000 /var/lib/kraft-combined-logs
+        busybox chown -R 1000:1000 /var/lib/kraft-combined-logs
 
-      # Format the Raft metadata
       docker run --rm \
         -v ${docker_volume.kafka_data.name}:/var/lib/kraft-combined-logs \
-        ${var.kafka_image} \
-        kafka-storage format \
+        ${var.kafka_image} kafka-storage format \
           --cluster-id "${local.cluster_id}" \
           --config /etc/kafka/kraft/server.properties \
           --ignore-formatted
@@ -67,9 +51,6 @@ resource "null_resource" "bootstrap_kraft" {
   }
 }
 
-############################################
-# 4. Kafka Container (single-node KRaft)
-############################################
 resource "docker_image" "kafka" {
   name = var.kafka_image
 }
@@ -78,15 +59,15 @@ resource "docker_container" "kafka" {
   name  = "payshield_kafka"
   image = var.kafka_image
 
-  # wait until metadata is formatted
   depends_on = [
     docker_network.payshield,
     docker_volume.kafka_data,
-    null_resource.bootstrap_kraft
+    null_resource.bootstrap_kraft,
   ]
 
   networks_advanced {
-    name = docker_network.payshield.name
+    name    = docker_network.payshield.name
+    aliases = ["payshield_kafka"]
   }
 
   volumes {
@@ -98,14 +79,20 @@ resource "docker_container" "kafka" {
     "CLUSTER_ID=${local.cluster_id}",
     "KAFKA_PROCESS_ROLES=broker,controller",
     "KAFKA_NODE_ID=1",
-    "KAFKA_CONTROLLER_QUORUM_VOTERS=1@payshield_kafka:9093",
+    "KAFKA_CONTROLLER_QUORUM_VOTERS=1@payshield_kafka:9094",
     "KAFKA_CONTROLLER_LISTENER_NAMES=CONTROLLER",
+
+    # three listeners: external, internal & controller
+    "KAFKA_LISTENERS=EXTERNAL://0.0.0.0:9092,INTERNAL://0.0.0.0:9093,CONTROLLER://0.0.0.0:9094",
+
+    # advertise BOTH so host (localhost) and containers (payshield_kafka) can reach the broker
+    "KAFKA_ADVERTISED_LISTENERS=EXTERNAL://localhost:9092,INTERNAL://payshield_kafka:9093",
+
+    "KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=EXTERNAL:PLAINTEXT,INTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT",
+    "KAFKA_INTER_BROKER_LISTENER_NAME=INTERNAL",
+
     "KAFKA_LOG_DIRS=/var/lib/kraft-combined-logs",
     "KAFKA_AUTO_CREATE_TOPICS_ENABLE=true",
-    "KAFKA_LISTENERS=PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093",
-
-    "KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://payshield_kafka:9092",
-
     "KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1",
     "KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR=1",
     "KAFKA_TRANSACTION_STATE_LOG_MIN_ISR=1",
@@ -117,9 +104,6 @@ resource "docker_container" "kafka" {
   }
 }
 
-############################################
-# 5. Schema Registry
-############################################
 resource "docker_image" "schema_registry" {
   name = var.schema_registry_image
 }
@@ -131,19 +115,23 @@ resource "docker_container" "schema_registry" {
   depends_on = [docker_container.kafka]
 
   networks_advanced {
-    name = docker_network.payshield.name
+    name    = docker_network.payshield.name
+    aliases = ["schema-registry"]
   }
 
   env = [
     "SCHEMA_REGISTRY_HOST_NAME=schema-registry",
     "SCHEMA_REGISTRY_LISTENERS=http://0.0.0.0:8081",
-    "SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS=PLAINTEXT://payshield_kafka:9092"
+    # ← MUST use the INTERNAL listener
+    "SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS=PLAINTEXT://payshield_kafka:9093",
   ]
 
   ports {
     internal = 8081
     external = 8081
   }
+
+  restart = "on-failure"
 }
 
 ############################################

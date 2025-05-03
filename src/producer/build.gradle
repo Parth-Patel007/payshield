@@ -1,0 +1,23 @@
+plugins {
+    id 'java'
+    id 'application'
+}
+
+group = 'com.example.payshield'
+version = '0.1.0'
+
+repositories {
+    mavenCentral()
+    maven { url 'https://packages.confluent.io/maven' }
+}
+
+dependencies {
+    implementation 'org.apache.kafka:kafka-clients:7.6.0-ccs'
+    implementation 'io.confluent:kafka-avro-serializer:7.6.0'
+    implementation 'org.apache.avro:avro:1.11.3'
+    implementation 'org.slf4j:slf4j-simple:1.7.36'  // enables logging
+}
+
+application {
+    mainClass = 'com.example.payshield.producer.PaymentProducer'
+}
