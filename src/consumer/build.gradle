@@ -1,0 +1,26 @@
+plugins {
+    id 'java'
+    id 'application'            // <<< add this
+}
+
+group = 'com.example.payshield'
+version = '1.0'
+
+repositories {
+    mavenCentral()
+    // Confluent’s Maven repo for their Avro serializer
+    maven { url 'https://packages.confluent.io/maven' }
+}
+
+dependencies {
+    implementation 'org.apache.kafka:kafka-clients:7.6.0-ccs'
+    implementation 'io.confluent:kafka-avro-serializer:7.6.0'
+    implementation 'org.postgresql:postgresql:42.7.3'
+    implementation 'com.zaxxer:HikariCP:5.0.1'
+    implementation 'org.slf4j:slf4j-simple:1.7.36'
+}
+
+application {
+    // Point this at your consumer’s main class:
+    mainClass = 'com.example.payshield.consumer.PaymentConsumer'
+}
