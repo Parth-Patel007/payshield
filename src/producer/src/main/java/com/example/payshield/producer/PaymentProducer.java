@@ -33,7 +33,7 @@ public class PaymentProducer {
                 event.put("msgId",         msgId);
                 event.put("debitAcct",     "acct-debit-" + i);
                 event.put("creditAcct",    "acct-credit-" + i);
-                event.put("amount",        100.0 + i);
+                event.put("amount",        10000.0 + i);
                 event.put("transactionTs", System.currentTimeMillis());
 
                 ProducerRecord<String, GenericRecord> record =
