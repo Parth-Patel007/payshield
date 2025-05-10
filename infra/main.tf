@@ -141,6 +141,7 @@ resource "docker_image" "redis" {
   name = var.redis_image
 }
 
+
 resource "docker_container" "redis" {
   name  = "payshield_redis"
   image = var.redis_image
