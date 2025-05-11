@@ -20,7 +20,7 @@ dependencies {
 
 application {
     // switch as needed:
-    mainClass = 'com.example.payshield.producer.PaymentProducer'
+//    mainClass = 'com.example.payshield.producer.PaymentProducer'
     // for tests:
-    // mainClass = 'com.example.payshield.producer.TestProducer'
+     mainClass = 'com.example.payshield.producer.TestProducer'
 }
