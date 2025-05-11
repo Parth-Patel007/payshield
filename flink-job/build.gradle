@@ -1,0 +1,49 @@
+// build.gradle
+plugins {
+    id 'java'
+    id 'application'
+}
+
+group = 'com.example.payshield'
+version = '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+    maven { url 'https://packages.confluent.io/maven/' }
+}
+
+ext {
+    flinkVersion     = '1.17.2'
+    confluentVersion = '7.6.0'
+}
+
+dependencies {
+    // Flink core & Kafka
+    implementation "org.apache.flink:flink-streaming-java:${flinkVersion}"
+    implementation "org.apache.flink:flink-clients:${flinkVersion}"
+    implementation "org.apache.flink:flink-connector-kafka:${flinkVersion}"
+
+    // Avro & Confluent Schema Registry
+    implementation "org.apache.flink:flink-avro:${flinkVersion}"
+    implementation "org.apache.flink:flink-avro-confluent-registry:${flinkVersion}"
+    implementation "io.confluent:kafka-avro-serializer:${confluentVersion}"
+
+    // Others
+    implementation 'org.slf4j:slf4j-simple:1.7.36'
+    implementation 'org.postgresql:postgresql:42.7.3'
+    implementation 'com.zaxxer:HikariCP:5.0.1'
+    implementation 'redis.clients:jedis:4.3.2'
+
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.10.0'
+    testRuntimeOnly   'org.junit.jupiter:junit-jupiter-engine:5.10.0'
+    testImplementation 'org.mockito:mockito-core:5.5.0'
+    testImplementation 'org.mockito:mockito-junit-jupiter:5.5.0'
+}
+
+application {
+    mainClass = 'com.example.payshield.flink.ThresholdJob'
+}
+
+test {
+    useJUnitPlatform()
+}
