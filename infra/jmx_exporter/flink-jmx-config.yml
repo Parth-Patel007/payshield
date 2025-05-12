@@ -1,0 +1,13 @@
+startDelaySeconds: 0
+hostPort: 127.0.0.1:9999
+jmxUrl: ""
+username: ""
+password: ""
+ssl: false
+lowercaseOutputName: true
+lowercaseOutputLabelNames: true
+rules:
+  - pattern: "kafka.server<type=(.+), name=(.+)><>Value"
+    name: "kafka_server_$1_$2"
+    type: GAUGE
+    help: "Kafka metric $1 $2"

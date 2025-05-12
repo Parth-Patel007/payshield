@@ -1,0 +1,11 @@
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: 'payshield'
+    static_configs:
+      - targets:
+          - 'payshield_kafka:9092'
+          - 'payshield_schema_registry:8081'
+          - 'payshield_redis:6379'
+          - 'payshield_postgres:5432'
