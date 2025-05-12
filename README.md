@@ -8,6 +8,7 @@ A solo project (Jan – Apr 2025) that builds a real-time streaming platform for
 - Prometheus & Grafana observability
 
 ## Diagram
+<img width="1250" alt="Screenshot 2025-05-12 at 3 27 45 PM" src="https://github.com/user-attachments/assets/284cddcb-c575-4152-b983-5c99cd22f1d8" />
 
 
 
